@@ -2,8 +2,12 @@
 <?php
 $max_time = 0;
 $min_time = 0;
+$max_time_hr = 0;
+$min_time_hr = 0;
 $err_num = 0;
+$last_err = 0;
 $requests = 0;
+$dformat = 'm-d-Y H:i:s';
 $had_err = false;
 $help = "Simple PHP Redis Client test.\n";
 $help .= "Usage: -hhostname -aauth -ssleep_time -cconnection_type -pport\n";
@@ -16,15 +20,15 @@ function screen_handler()
 {
     passthru('clear');
     echo "\n";
-    echo 'Max request time: ' . $GLOBALS['max_time'] . "\n";
-    echo 'Min request time: ' . $GLOBALS['min_time'] . "\n";
-    echo 'Number of errors: ' . $GLOBALS['err_num'] . "\n";
+    echo 'Max request time: ' . $GLOBALS['max_time'] . ' @ ' . $GLOBALS['max_time_hr'] . "\n";
+    echo 'Min request time: ' . $GLOBALS['min_time'] . ' @ ' . $GLOBALS['min_time_hr'] . "\n";
+    echo 'Number of errors: ' . $GLOBALS['err_num'] . ' Last err @ ' . $GLOBALS['last_err'] . "\n";
     echo 'Requests: ' . $GLOBALS['requests'] . "\n";
 }
 $default_opts = array('h' => 'localhost',
                       'a' => false,
                       'p' => 6379,
-                      's' => false,
+                      's' => 1,
                       'c' => 'pconnect');
 $opts = array_merge($default_opts, getopt('h::a::p::s::c::'));
 print_r($opts);
@@ -54,16 +58,26 @@ while(true)
     {
         $had_err = true;
         $err_num++;
+        $last_err = date($dformat);
     }
     if(!$max_time && !$min_time && !$had_err)
     {
         $min_time = $max_time = $rtime;
-
+        $min_time_hr = $max_time_hr = date($dformat);
+    }
+    if($max_time <= $rtime)
+    {
+        $max_time = $rtime;
+        $max_time_hr = date($dformat);
+    }
+    if($min_time >= $rtime)
+    {
+        $min_time = $rtime;
+        $min_time_hr = date($dformat);
     }
     screen_handler();
     $requests++;
     $had_err = false;
     sleep($opts['s']);
-
 }
 ?>
