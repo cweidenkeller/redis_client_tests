@@ -1,0 +1,69 @@
+#!/usr/bin/env php
+<?php
+$max_time = 0;
+$min_time = 0;
+$err_num = 0;
+$requests = 0;
+$had_err = false;
+$help = "Simple PHP Redis Client test.\n";
+$help .= "Usage: -hhostname -aauth -ssleep_time -cconnection_type -pport\n";
+if(count($argv) == 2 && $argv[1] == '--help')
+{
+    echo $help;
+    exit;
+}
+function screen_handler()
+{
+    passthru('clear');
+    echo "\n";
+    echo 'Max request time: ' . $GLOBALS['max_time'] . "\n";
+    echo 'Min request time: ' . $GLOBALS['min_time'] . "\n";
+    echo 'Number of errors: ' . $GLOBALS['err_num'] . "\n";
+    echo 'Requests: ' . $GLOBALS['requests'] . "\n";
+}
+$default_opts = array('h' => 'localhost',
+                      'a' => false,
+                      'p' => 6379,
+                      's' => false,
+                      'c' => 'pconnect');
+$opts = array_merge($default_opts, getopt('h::a::p::s::c::'));
+print_r($opts);
+$redis = new Redis();
+while(true)
+{
+    try
+    {   
+        $rtime = microtime();
+        if($opts['c'] == 'pconnect')
+        {
+            $redis->pconnect($opts['h'], $opts['p']);
+        }
+        else
+        {
+            $redis->connect($opts['h'], $opts['p']);
+        }
+        if($opts['a'])
+        {
+            $redis->auth($opts['a']);
+        }
+        $redis->ping();
+        $redis->close();
+        $rtime = microtime() - $rtime;
+    }
+    catch(RedisException $e)
+    {
+        $had_err = true;
+        $err_num++;
+    }
+    if(!$max_time && !$min_time && !$had_err)
+    {
+        $min_time = $max_time = $rtime;
+
+    }
+    screen_handler();
+    $requests++;
+    $had_err = false;
+    sleep($opts['s']);
+
+}
+?>
